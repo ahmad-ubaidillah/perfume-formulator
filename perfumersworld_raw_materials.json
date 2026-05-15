@@ -1,0 +1,29 @@
+[
+  {
+    "name": "Lilial",
+    "sku": "SKU3MA00273",
+    "description": "Lilial is fresh light green floral lily muguet lindenblossom aldehyde lilac modern.",
+    "price": "USD 0.19",
+    "currency": "USD",
+    "price_per_unit": "0.19",
+    "odour": "fresh light green floral lily notes muguet lindenblossom",
+    "perfume_uses": "Muguet Aldehyde Lilac Lindenblossom Modern",
+    "fema": "No FEMA Number",
+    "relative_odor_impact": "80",
+    "odor_lifetime": "72",
+    "synonyms": "p-tert.Butyl-alpha-methyldihydrocinnamic aldehyde :x alpha-Methyl-p-tert.butyldihydrocinnamaldehyde : alpha-Methyl-4-(1,1,-dimethylethyl)benzenepropanal : Florilys extra : Lilestralis : Lilial : Lilion : Lily aldehyde : Lysmeral : novafleur : Rhonaldehyde : Bucinal",
+    "cas": "80-54-6",
+    "ifra_doc_url": "https://www.perfumersworld.com/document-list.php?pro_id=3MA00273",
+    "abc_muguet": "80",
+    "abc_aliphatic": "15",
+    "abc_green": "5",
+    "typical_usage_from": "0.100",
+    "typical_usage_avg": "1.000",
+    "typical_usage_max": "15.000",
+    "application_suitability": "{\"Alcoholic Perfume\": 9, \"Anti-perspirants/Deo\": 5, \"Creams and Lotions\": 9, \"Talcum Powder\": 9, \"Tablet Soap\": 9, \"Liquid Soap\": 9, \"Shampoo\": 9, \"Hair Conditioner\": 9, \"Bath/Shower Gel\": 9, \"Cold Wave\": 1, \"Acid Cleaner\": 9, \"Ammonia\": 8, \"Chlorine\": 6, \"Detergent Powder\": 5, \"Liquid Detergent\": 8, \"Fabric Softener\": 9, \"Candles\": 9, \"Pot Pourri\": 9, \"Incense\": 9}",
+    "crawled_at": "2026-05-10 10:44:46",
+    "url": "https://www.perfumersworld.com/view.php?pro_id=3MA00273",
+    "status": "ok",
+    "error": ""
+  }
+]
