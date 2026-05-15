@@ -1,0 +1,32 @@
+{
+  "name": "perfumersworld-library",
+  "version": "1.0.0",
+  "description": "Comprehensive library of all raw materials from PerfumersWorld.com with search and filtering capabilities",
+  "main": "webapp/server.js",
+  "scripts": {
+    "start": "node webapp/server.js",
+    "dev": "node webapp/server.js --dev",
+    "crawler": "node crawler/crawler.js",
+    "test": "jest",
+    "e2e": "playwright test"
+  },
+  "keywords": [
+    "perfumery",
+    "raw materials",
+    "crawling",
+    "search",
+    "filter"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.2.1",
+    "puppeteer": "^20.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "playwright": "^1.40.0",
+    "eslint": "^8.0.0",
+    "prettier": "^2.0.0"
+  }
+}
