@@ -3,6 +3,7 @@ const path = require('path');
 const { loadRawMaterials } = require('../data/dataManager');
 const { interpretTheme } = require('../data/theme_interpreter');
 const { selectMaterials } = require('../data/material_selector');
+const { calculateFormula, simulateEvaporation } = require('../data/formula_engine');
 const rateLimit = require('express-rate-limit');
 const { spawn } = require('child_process');
 const fs = require('fs').promises;
@@ -284,6 +285,34 @@ app.post('/api/formula/generate', async (req, res) => {
     maxMaterials: req.body.maxMaterials || 15,
   });
   res.json(selection);
+});
+
+app.post('/api/formula/calculate', async (req, res) => {
+  const materials = req.body.materials || [];
+  if (materials.length === 0) return res.status(400).json({ error: 'Materials required' });
+
+  const skus = materials.map(m => m.sku);
+  const productMap = {};
+  for (const p of products) {
+    if (skus.includes(p.sku)) productMap[p.sku] = p;
+  }
+
+  const enrichedMaterials = materials.map(m => ({
+    ...m,
+    ...(productMap[m.sku] || {}),
+  }));
+
+  const result = calculateFormula(enrichedMaterials, {
+    bottleSize: req.body.bottleSize || 50,
+    concentration: req.body.concentration || 0.10,
+    diffusionMode: req.body.diffusionMode || 'normal',
+  });
+
+  if (req.body.simulate) {
+    result.simulation = simulateEvaporation(result.materials, req.body.simulationHours || 48);
+  }
+
+  res.json(result);
 });
 
 app.get('/api/sync/status', async (req, res) => {
