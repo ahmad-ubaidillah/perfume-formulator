@@ -388,6 +388,13 @@ async function main() {
     await saveCache(newCache);
     console.log(`Data saved to ${OUTPUT_FILE}`);
     console.log(`Cache saved to ${CACHE_FILE}`);
+
+    const { enrichMaterials } = require('../data/enrich');
+    const enriched = enrichMaterials(products);
+    const enrichedPath = path.join(DATA_DIR, 'raw_materials_enriched.json');
+    await fs.writeFile(enrichedPath, JSON.stringify(enriched, null, 2), 'utf8');
+    console.log(`Enriched data saved to ${enrichedPath}`);
+
     console.log('Done!');
 
   } catch (err) {

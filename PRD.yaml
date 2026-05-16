@@ -1,0 +1,505 @@
+product:
+  name: Olfactory Engine
+  type: AI Perfume Formulation System
+  version: 1.0
+  status: Final PRD
+
+vision:
+  statement: >
+    Build a computational perfumery system capable of transforming
+    human olfactory concepts into production-ready perfume formulas
+    using chemistry-aware, physics-aware, and olfactory-aware logic.
+
+goals:
+  primary:
+    - Generate balanced and production-ready perfume formulas
+    - Maintain realistic olfactory structure and transition
+    - Improve projection, sillage, and longevity through molecular architecture
+    - Reduce trial-and-error in perfume formulation
+  success_metrics:
+    formula_usability_rate: ">= 80%"
+    average_generation_time: "<= 5 seconds"
+    reproducibility: "High batch consistency"
+
+target_users:
+  primary:
+    - Indie perfumers
+    - Advanced hobbyists
+    - Fragrance startups
+  secondary:
+    - Cosmetic R&D teams
+    - Experimental olfactory researchers
+
+system_architecture:
+  frontend:
+    features:
+      - Theme input UI
+      - Formula dashboard
+      - Performance simulation visualization
+      - Material explorer
+  backend:
+    services:
+      - Crawler Service
+      - Material Database
+      - AI Theme Interpreter
+      - Material Selection Engine
+      - Formula Engine
+      - Simulation Engine
+      - Constraint & Safety Engine
+
+core_engines:
+
+  crawler_engine:
+    description: >
+      Crawls perfumery databases and extracts structured raw material data.
+
+    target_sources:
+      - PerfumersWorld
+      - TGSC
+      - GoodScents
+
+    extracted_fields:
+
+      identity:
+        - name
+        - synonyms
+        - cas_number
+        - chemical_class
+
+      olfactory:
+        - odor_description
+        - olfactive_family
+        - abc_donut_family
+
+      performance:
+        - relative_odor_impact
+        - odor_life_hours
+
+      usage:
+        - usage_min
+        - usage_avg
+        - usage_max
+
+      metadata:
+        - physical_state
+        - color
+        - ifra_notes
+
+  material_database:
+
+    description: >
+      Stores normalized and AI-enriched raw material data.
+
+    required_fields:
+
+      core:
+        - id
+        - name
+        - cas_number
+        - odor_description
+        - olfactive_family
+        - abc_donut_family
+
+      performance:
+        - ov
+        - odor_life
+        - threshold_factor
+        - diffusion_factor
+        - persistence_factor
+        - evaporation_constant
+
+      formulation:
+        - structural_role
+        - functional_roles
+        - role_factor
+        - usage_min
+        - usage_max
+
+      ai_generated:
+        - semantic_embedding
+        - compatibility_tags
+        - accord_tags
+
+  ai_theme_interpreter:
+
+    description: >
+      Converts natural language fragrance concepts into structured olfactory intent.
+
+    example:
+
+      input: >
+        blooming rose after rain
+
+      output:
+        rose: 0.75
+        rain: 0.20
+        petrichor: 0.05
+
+    responsibilities:
+      - semantic parsing
+      - olfactory concept extraction
+      - accord decomposition
+      - emotional tone detection
+      - olfactive family estimation
+
+  material_selection_engine:
+
+    description: >
+      Selects candidate materials based on semantic similarity,
+      olfactive family, molecular behavior, and compatibility.
+
+    selection_logic:
+      - semantic_embedding_similarity
+      - abc_donut_matching
+      - olfactive_family_matching
+      - compatibility_matrix_scoring
+      - structural_balance_rules
+
+    requirements:
+      minimum_materials_per_theme: 3
+      required_layers:
+        - top
+        - heart
+        - base
+
+      required_functional_roles:
+        - radiator
+        - fixative
+        - bridger
+
+    auto_injection_rules:
+      missing_radiator:
+        inject:
+          - Iso E Super
+          - Ambroxan
+
+      missing_bridger:
+        inject:
+          - Hedione
+          - Linalool
+
+      missing_fixative:
+        inject:
+          - Patchouli
+          - Vetiver
+          - Musks
+
+formula_engine:
+
+  philosophy: >
+    Formula generation must combine rule-based chemistry logic
+    with AI-assisted material selection.
+
+  architecture:
+    rule_based: 0.60
+    ai_assisted: 0.40
+
+  master_formula:
+    equation: |
+      G_raw =
+      (
+        L * W * I * S *
+        (OV^0.6) *
+        (T^0.4) *
+        D * P * Rf
+      )
+      /
+      SUM(
+        Li * Wi * Ii * Si *
+        (OVi^0.6) *
+        (Ti^0.4) *
+        Di * Pi * Rfi
+      )
+
+  variable_definitions:
+
+    L:
+      name: Theme Weight
+      description: Relative thematic importance
+
+    W:
+      name: Structural Weight
+      description: Top / Heart / Base importance
+
+    I:
+      name: Impact Balancer
+      description: Prevents overpowering materials
+
+    S:
+      name: Safety Factor
+      description: Usage and IFRA compliance modifier
+
+    OV:
+      name: Relative Odor Impact
+      description: Relative aromatic strength
+
+    T:
+      name: Threshold Factor
+      description: Human odor detection sensitivity
+
+    D:
+      name: Diffusion Factor
+      description: Air projection capability
+
+    P:
+      name: Persistence Factor
+      description: Longevity behavior
+
+    Rf:
+      name: Role Factor
+      description: Functional role weighting
+
+role_system:
+
+  structural_roles:
+    - top
+    - heart
+    - base
+
+  functional_roles:
+
+    core:
+      description: Main thematic identity
+      role_factor: 1.0
+
+    bridger:
+      description: Smooths transitions between layers
+      examples:
+        - Hedione
+        - Linalool
+      role_factor: 0.85
+
+    radiator:
+      description: Enhances projection and diffusion
+      examples:
+        - Iso E Super
+        - Ambroxan
+      role_factor: 1.2
+
+    fixative:
+      description: Slows evaporation and improves longevity
+      examples:
+        - Patchouli
+        - Vetiver
+        - Labdanum
+      role_factor: 1.1
+
+    modifier:
+      description: Adds accents and nuances
+      role_factor: 0.75
+
+    blender:
+      description: Fills gaps and softens harsh edges
+      role_factor: 0.9
+
+layer_architecture_rules:
+
+  minimum_requirements:
+    top: 1
+    heart: 2
+    base: 2
+
+  mandatory_functional_roles:
+    - radiator
+    - fixative
+    - bridger
+
+diffusion_engine:
+
+  description: >
+    Enhances projection and scent cloud behavior.
+
+  formula: |
+    G_final = G_raw * (1 + DL)
+
+  diffusion_modes:
+    soft: 0.10
+    normal: 0.20
+    beast: 0.30
+
+constraint_engine:
+
+  description: >
+    Prevents unrealistic or unsafe formulations.
+
+  rules:
+
+    max_usage:
+      equation: |
+        G_i <= usage_max
+
+    minimum_detectability:
+      equation: |
+        G_i >= practical_threshold
+
+    auto_dilution:
+      condition: "G_i < 0.01g"
+      actions:
+        - dilute_to_10_percent
+        - dilute_to_1_percent
+
+interaction_matrix:
+
+  description: >
+    Applies corrections based on known material interactions.
+
+  formula: |
+    G_i = G_i * C_interaction
+
+  examples:
+
+    positive:
+      - pair: "Hedione + Floral"
+        modifier: 1.2
+
+    negative:
+      - pair: "Calone + Rose"
+        modifier: 0.8
+
+simulation_engine:
+
+  description: >
+    Simulates evaporation and intensity over time.
+
+  formula: |
+    Intensity(t) = G_i * e^(-k_i * t)
+
+  outputs:
+    - opening_phase
+    - heart_phase
+    - drydown_phase
+
+performance_prediction:
+
+  outputs:
+    - longevity_score
+    - projection_score
+    - sillage_score
+    - balance_score
+    - diffusion_score
+
+user_flow:
+
+  step_1:
+    name: User Input
+    inputs:
+      - fragrance_theme
+      - theme_distribution
+      - bottle_size_ml
+      - concentration_type
+
+  step_2:
+    name: AI Interpretation
+    actions:
+      - parse_theme
+      - generate_semantic_structure
+      - select_candidate_materials
+
+  step_3:
+    name: Formula Generation
+    actions:
+      - assign_roles
+      - calculate_weights
+      - normalize_formula
+      - apply_constraints
+
+  step_4:
+    name: Output
+    outputs:
+      - production_ready_formula
+      - layer_breakdown
+      - performance_prediction
+
+output_specification:
+
+  formula:
+    - material_name
+    - percentage
+    - gram_amount
+    - dilution_requirement
+
+  structure:
+    - top_notes
+    - heart_notes
+    - base_notes
+
+  functional_breakdown:
+    - bridgers
+    - radiators
+    - fixatives
+    - modifiers
+    - blenders
+
+  batch_information:
+    - bottle_size
+    - oil_volume
+    - alcohol_volume
+    - final_concentration
+
+non_functional_requirements:
+
+  performance:
+    api_response_time: "<= 5 seconds"
+
+  scalability:
+    supported_materials: ">= 10,000"
+
+  reliability:
+    deterministic_formula_generation: true
+
+  extensibility:
+    plugin_ready: true
+
+risks_and_mitigation:
+
+  incomplete_data:
+    mitigation:
+      - ai_estimation
+      - fallback_defaults
+
+  ai_hallucination:
+    mitigation:
+      - rule_based_override
+      - hard_constraints
+
+  poor_formula_quality:
+    mitigation:
+      - interaction_matrix
+      - role_balance_rules
+
+  overpowering_materials:
+    mitigation:
+      - impact_balancer
+      - OV normalization
+
+roadmap:
+
+  phase_1:
+    features:
+      - crawler
+      - material_database
+      - manual_formula_engine
+
+  phase_2:
+    features:
+      - ai_theme_interpreter
+      - automatic_material_selection
+
+  phase_3:
+    features:
+      - simulation_engine
+      - interaction_matrix
+
+  phase_4:
+    features:
+      - perfume_dna_matching
+      - reverse_engineering_assistant
+      - accord_learning_system
+
+final_statement:
+  description: >
+    Olfactory Engine is not merely an AI fragrance generator.
+    It is a computational perfumery platform combining
+    chemistry, olfactory science, diffusion physics,
+    and intelligent formulation logic into a reproducible
+    production-grade system.

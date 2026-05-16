@@ -481,13 +481,11 @@ function toggleFormulaItem(sku, name, imgUrl) {
   for (var i = 0; i < formula.length; i++) {
     if (formula[i].sku === sku) { idx = i; break; }
   }
-
   if (idx >= 0) {
     formula.splice(idx, 1);
   } else {
-    formula.push({ sku: sku, name: name, image: imgUrl });
+    formula.push({ sku: sku, name: name, image: imgUrl, pct: 0 });
   }
-
   saveFormula(formula);
   loadProducts(currentPage);
 }
@@ -505,17 +503,48 @@ function clearFormula() {
   }
 }
 
+function updateFormulaPct(sku, val) {
+  var formula = getFormula();
+  for (var i = 0; i < formula.length; i++) {
+    if (formula[i].sku === sku) {
+      formula[i].pct = parseFloat(val) || 0;
+      break;
+    }
+  }
+  saveFormula(formula);
+}
+
+function getBatchSettings() {
+  var bottleSize = parseFloat(document.getElementById('bottleSize').value) || 50;
+  var conc = parseFloat(document.getElementById('concentrationType').value) || 0.10;
+  return { bottleSize: bottleSize, conc: conc, oilVolume: bottleSize * conc, alcoholVolume: bottleSize * (1 - conc) };
+}
+
+function recalcFormula() {
+  var settings = getBatchSettings();
+  document.getElementById('oilVolume').textContent = settings.oilVolume.toFixed(1);
+  document.getElementById('alcoholVolume').textContent = settings.alcoholVolume.toFixed(1);
+  updateFormulaUI();
+}
+
 function exportFormula() {
   var formula = getFormula();
   if (formula.length === 0) return;
+  var settings = getBatchSettings();
+  var totalPct = formula.reduce(function(s, f) { return s + (f.pct || 0); }, 0);
 
-  var text = 'My Perfume Formula\n';
+  var text = 'Perfume Formula\n';
   text += '========================\n\n';
-  text += 'Exported from Perfume Formulator\n\n';
-  formula.forEach(function(f, i) {
-    text += (i + 1) + '. ' + f.name + ' (' + f.sku + ')\n';
+  text += 'Bottle: ' + settings.bottleSize + 'ml | Concentration: ' + (settings.conc * 100) + '%\n';
+  text += 'Oil: ' + settings.oilVolume.toFixed(1) + 'ml | Alcohol: ' + settings.alcoholVolume.toFixed(1) + 'ml\n\n';
+  text += 'Material'.padEnd(40) + '  %'.padStart(8) + '   Grams\n';
+  text += '-'.repeat(60) + '\n';
+  formula.forEach(function(f) {
+    var grams = ((f.pct || 0) / 100 * settings.oilVolume).toFixed(3);
+    text += f.name.padEnd(40) + '  ' + (f.pct || 0).toFixed(2).padStart(6) + '%  ' + grams.padStart(7) + 'g\n';
   });
-  text += '\nTotal: ' + formula.length + ' materials';
+  text += '-'.repeat(60) + '\n';
+  text += 'Total:'.padEnd(40) + '  ' + totalPct.toFixed(2).padStart(6) + '%\n';
 
   var blob = new Blob([text], { type: 'text/plain' });
   var a = document.createElement('a');
@@ -524,9 +553,15 @@ function exportFormula() {
   a.click();
 }
 
+let formulaMaterialData = {};
+
 function updateFormulaUI() {
   var formula = getFormula();
+  var settings = getBatchSettings();
   formulaCount.textContent = formula.length;
+
+  document.getElementById('oilVolume').textContent = settings.oilVolume.toFixed(1);
+  document.getElementById('alcoholVolume').textContent = settings.alcoholVolume.toFixed(1);
 
   if (formula.length === 0) {
     formulaList.innerHTML =
@@ -534,22 +569,147 @@ function updateFormulaUI() {
         '<i class="fas fa-flask"></i>' +
         '<p>Click <strong>+ Add</strong> on any material to start building your formula</p>' +
       '</div>';
+    document.getElementById('formulaTotalPct').textContent = '0';
+    document.getElementById('formulaTotalGrams').textContent = '0.00g';
+    document.getElementById('formulaTotalBar').className = 'formula-total-bar';
+    document.getElementById('formulaWarnings').innerHTML = '';
+    document.getElementById('formulaWarnings').className = 'formula-warnings';
     return;
   }
 
-  var html = '';
-  formula.forEach(function(f) {
-    html +=
-      '<div class="formula-item">' +
-        (f.image ? '<img src="' + escAttr(f.image) + '" alt="" onerror="this.style.display=\'none\'">' : '<div style="width:36px;height:36px;background:var(--bg-secondary);border-radius:4px;display:flex;align-items:center;justify-content:center;"><i class="fas fa-flask" style="color:var(--text-muted)"></i></div>') +
-        '<div class="formula-item-info">' +
-          '<div class="formula-item-name">' + esc(f.name) + '</div>' +
-          '<div class="formula-item-sku">' + f.sku + '</div>' +
-        '</div>' +
-        '<button class="formula-item-remove" onclick="removeFromFormula(\'' + escAttr(f.sku) + '\')" title="Remove"><i class="fas fa-times"></i></button>' +
+  var skus = formula.map(function(f) { return f.sku; });
+  fetch('/api/materials/bulk', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ skus: skus })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(materials) {
+    formulaMaterialData = {};
+    materials.forEach(function(m) { formulaMaterialData[m.sku] = m; });
+
+    var totalPct = formula.reduce(function(s, f) { return s + (f.pct || 0); }, 0);
+    var totalBar = document.getElementById('formulaTotalBar');
+    totalBar.className = 'formula-total-bar ' + (Math.abs(totalPct - 100) < 0.01 ? 'ok' : (totalPct > 100 ? 'over' : ''));
+    document.getElementById('formulaTotalPct').textContent = totalPct.toFixed(2);
+    document.getElementById('formulaTotalGrams').textContent = (totalPct / 100 * settings.oilVolume).toFixed(2) + 'g';
+
+    var layerPcts = { top: 0, heart: 0, base: 0 };
+    var roleCoverage = { radiator: false, fixative: false, bridger: false };
+    formula.forEach(function(f) {
+      var mat = formulaMaterialData[f.sku];
+      if (mat && f.pct > 0) {
+        var layer = mat.structural_role || 'heart';
+        layerPcts[layer] = (layerPcts[layer] || 0) + f.pct;
+        (mat.functional_roles || []).forEach(function(r) {
+          if (r === 'radiator' || r === 'fixative' || r === 'bridger') roleCoverage[r] = true;
+        });
+      }
+    });
+
+    var layerSummary = document.getElementById('formulaLayerSummary');
+    var layerHtml = '';
+    ['top', 'heart', 'base'].forEach(function(layer) {
+      var pct = layerPcts[layer] || 0;
+      var barWidth = totalPct > 0 ? (pct / totalPct * 100) : 0;
+      layerHtml += '<div class="layer-bar-row">' +
+        '<span class="layer-bar-label ' + layer + '">' + layer + '</span>' +
+        '<div class="layer-bar-track"><div class="layer-bar-fill ' + layer + '" style="width:' + barWidth + '%"></div></div>' +
+        '<span class="layer-bar-pct">' + pct.toFixed(1) + '%</span>' +
       '</div>';
+    });
+    var roleHtml = '<div class="role-coverage">';
+    ['radiator', 'fixative', 'bridger'].forEach(function(role) {
+      var present = roleCoverage[role];
+      var icons = { radiator: '🔥', fixative: '📌', bridger: '🔗' };
+      roleHtml += '<span class="role-badge ' + (present ? 'present' : 'missing') + '">' + (icons[role] || '') + ' ' + role + '</span>';
+    });
+    roleHtml += '</div>';
+    layerSummary.innerHTML = layerHtml + roleHtml;
+    layerSummary.className = 'formula-layer-summary has-data';
+
+    var warnings = [];
+    if (!roleCoverage.radiator) warnings.push({ msg: 'Missing radiator — poor projection', type: 'warn' });
+    if (!roleCoverage.fixative) warnings.push({ msg: 'Missing Fixative — poor longevity', type: 'warn' });
+    if (!roleCoverage.bridger) warnings.push({ msg: 'Missing Bridger — harsh transitions', type: 'warn' });
+    if (layerPcts.top < 10 && totalPct > 0) warnings.push({ msg: 'Top notes < 10%', type: 'warn' });
+    if (layerPcts.heart < 20 && totalPct > 0) warnings.push({ msg: 'Heart notes < 20%', type: 'warn' });
+    if (layerPcts.base < 10 && totalPct > 0) warnings.push({ msg: 'Base notes < 10%', type: 'warn' });
+
+    var html = '';
+    formula.forEach(function(f) {
+      var pct = f.pct || 0;
+      var grams = (pct / 100 * settings.oilVolume);
+      var itemClass = 'formula-item';
+      var itemWarnings = [];
+      var mat = formulaMaterialData[f.sku];
+
+      if (mat) {
+        if (mat.usage_max !== null && pct > mat.usage_max) {
+          itemClass += ' error';
+          itemWarnings.push('Exceeds max (' + mat.usage_max + '%)');
+        }
+        if (mat.usage_min !== null && pct > 0 && pct < mat.usage_min) {
+          itemClass += ' warn';
+          itemWarnings.push('Below min (' + mat.usage_min + '%)');
+        }
+      }
+      if (pct > 0 && grams < 0.01) {
+        itemClass += ' warn';
+        itemWarnings.push('< 0.01g — dilute');
+      }
+
+      var imgUrl = (mat && mat.image_url) || f.image || '';
+      var rolesHtml = '';
+      if (mat && mat.functional_roles) {
+        var displayRoles = mat.functional_roles.filter(function(r) { return r !== 'core'; });
+        if (displayRoles.length > 0) {
+          rolesHtml = '<div class="formula-item-roles">' + displayRoles.map(function(r) {
+            return '<span class="item-role-badge ' + r + '">' + r + '</span>';
+          }).join('') + '</div>';
+        }
+      }
+
+      html +=
+        '<div class="' + itemClass + '">' +
+          (imgUrl ? '<img src="' + escAttr(imgUrl) + '" alt="" onerror="this.style.display=\'none\'">' : '') +
+          '<div class="formula-item-info">' +
+            '<div class="formula-item-name">' + esc(f.name) + '</div>' +
+            '<div class="formula-item-sku">' + f.sku + '</div>' +
+            rolesHtml +
+          '</div>' +
+          '<div class="formula-item-pct">' +
+            '<input type="number" value="' + (pct || '') + '" min="0" max="100" step="0.01" placeholder="%" onchange="updateFormulaPct(\'' + escAttr(f.sku) + '\', this.value)" oninput="updateFormulaPct(\'' + escAttr(f.sku) + '\', this.value)">' +
+            '<span class="pct-label">%</span>' +
+          '</div>' +
+          '<span class="formula-item-grams">' + grams.toFixed(3) + 'g</span>' +
+          '<button class="formula-item-remove" onclick="removeFromFormula(\'' + escAttr(f.sku) + '\')" title="Remove"><i class="fas fa-times"></i></button>' +
+        '</div>';
+
+      itemWarnings.forEach(function(w) {
+        warnings.push({ sku: f.sku, name: f.name, msg: w, type: itemClass.includes('error') ? 'error' : 'warn' });
+      });
+    });
+    formulaList.innerHTML = html;
+
+    if (Math.abs(totalPct - 100) > 0.01) {
+      warnings.push({ msg: 'Total is ' + totalPct.toFixed(2) + '% (should be 100%)', type: totalPct > 100 ? 'error' : 'warn' });
+    }
+
+    var warnEl = document.getElementById('formulaWarnings');
+    if (warnings.length > 0) {
+      warnEl.className = 'formula-warnings has-warnings';
+      warnEl.innerHTML = warnings.map(function(w) {
+        return '<div class="formula-warning-item ' + w.type + '"><i class="fas fa-' + (w.type === 'error' ? 'exclamation-circle' : 'exclamation-triangle') + '"></i>' + (w.name ? esc(w.name) + ': ' : '') + esc(w.msg) + '</div>';
+      }).join('');
+    } else {
+      warnEl.className = 'formula-warnings';
+      warnEl.innerHTML = '';
+    }
+  })
+  .catch(function(err) {
+    console.error('Failed to load material data:', err);
   });
-  formulaList.innerHTML = html;
 }
 
 function toggleFormulaPanel() {

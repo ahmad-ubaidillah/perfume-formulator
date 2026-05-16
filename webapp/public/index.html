@@ -62,17 +62,48 @@
 
     <aside class="formula-panel" id="formulaPanel">
       <div class="formula-header">
-        <h3><i class="fas fa-vial"></i> My Formula</h3>
+        <h3><i class="fas fa-vial"></i> Formula</h3>
         <button class="formula-close-btn" onclick="toggleFormulaPanel()"><i class="fas fa-times"></i></button>
       </div>
+
+      <div class="formula-batch-calc" id="formulaBatchCalc">
+        <div class="batch-row">
+          <label>Bottle</label>
+          <div class="batch-inputs">
+            <input type="number" id="bottleSize" value="50" min="1" max="1000" step="1" oninput="recalcFormula()">
+            <select id="concentrationType" onchange="recalcFormula()">
+              <option value="0.05">EDT 5%</option>
+              <option value="0.10" selected>EDT 10%</option>
+              <option value="0.15">EDP 15%</option>
+              <option value="0.20">Parfum 20%</option>
+              <option value="0.30">Extrait 30%</option>
+            </select>
+          </div>
+        </div>
+        <div class="batch-summary" id="batchSummary">
+          <span>Oil: <b id="oilVolume">5.0</b>ml</span>
+          <span>Alcohol: <b id="alcoholVolume">45.0</b>ml</span>
+        </div>
+      </div>
+
+      <div class="formula-total-bar" id="formulaTotalBar">
+        <span>Total: <b id="formulaTotalPct">0</b>%</span>
+        <span id="formulaTotalGrams">0.00g</span>
+      </div>
+
+      <div class="formula-layer-summary" id="formulaLayerSummary"></div>
+
+      <div class="formula-warnings" id="formulaWarnings"></div>
+
       <div class="formula-list" id="formulaList">
         <div class="formula-empty">
           <i class="fas fa-flask"></i>
           <p>Click <strong>+ Add</strong> on any material to start building your formula</p>
         </div>
       </div>
+
       <div class="formula-footer">
-        <button class="formula-clear-btn" onclick="clearFormula()"><i class="fas fa-trash"></i> Clear All</button>
+        <button class="formula-clear-btn" onclick="clearFormula()"><i class="fas fa-trash"></i> Clear</button>
         <button class="formula-export-btn" onclick="exportFormula()"><i class="fas fa-download"></i> Export</button>
       </div>
     </aside>

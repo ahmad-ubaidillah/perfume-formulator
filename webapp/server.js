@@ -241,6 +241,31 @@ app.get('/api/categories', async (req, res) => {
   res.json(Object.entries(tags).sort((a, b) => b[1] - a[1]));
 });
 
+app.post('/api/materials/bulk', async (req, res) => {
+  const skus = (req.body.skus || []).map(s => s.toLowerCase());
+  if (skus.length === 0) return res.json([]);
+  const results = [];
+  for (const p of products) {
+    const key = ((p.sku || '') + '|' + (p.pro_id || '')).toLowerCase();
+    if (skus.some(s => key.includes(s))) {
+      results.push({
+        sku: p.sku, pro_id: p.pro_id, raw_material: p.raw_material,
+        usage_min: p.usage_min !== undefined ? p.usage_min : null,
+        usage_max: p.usage_max !== undefined ? p.usage_max : null,
+        usage_avg: p.usage_avg !== undefined ? p.usage_avg : null,
+        structural_role: p.structural_role,
+        functional_roles: p.functional_roles,
+        evaporation_constant: p.evaporation_constant,
+        diffusion_factor: p.diffusion_factor,
+        persistence_factor: p.persistence_factor,
+        image_url: p.image_url,
+        abc_category: p.abc_category,
+      });
+    }
+  }
+  res.json(results);
+});
+
 app.get('/api/sync/status', async (req, res) => {
   res.json(syncState);
 });
