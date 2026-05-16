@@ -1,6 +1,8 @@
 const express = require('express');
 const path = require('path');
 const { loadRawMaterials } = require('../data/dataManager');
+const { interpretTheme } = require('../data/theme_interpreter');
+const { selectMaterials } = require('../data/material_selector');
 const rateLimit = require('express-rate-limit');
 const { spawn } = require('child_process');
 const fs = require('fs').promises;
@@ -264,6 +266,24 @@ app.post('/api/materials/bulk', async (req, res) => {
     }
   }
   res.json(results);
+});
+
+app.post('/api/theme/interpret', async (req, res) => {
+  const text = req.body.text || '';
+  if (!text.trim()) return res.status(400).json({ error: 'Theme text required' });
+  const result = interpretTheme(text);
+  res.json(result);
+});
+
+app.post('/api/formula/generate', async (req, res) => {
+  const text = req.body.text || '';
+  if (!text.trim()) return res.status(400).json({ error: 'Theme text required' });
+  const themeResult = interpretTheme(text);
+  const selection = selectMaterials(products, themeResult, {
+    minMaterials: req.body.minMaterials || 8,
+    maxMaterials: req.body.maxMaterials || 15,
+  });
+  res.json(selection);
 });
 
 app.get('/api/sync/status', async (req, res) => {

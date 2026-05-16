@@ -842,9 +842,75 @@ document.addEventListener('click', function(e) {
   if (!e.target.closest('.search-input-wrapper')) hideSearchHistory();
 });
 
+function showThemeSection() {
+  document.getElementById('themeSection').style.display = 'block';
+}
+
+function generateFormula() {
+  var text = document.getElementById('themeInput').value.trim();
+  if (!text) return;
+
+  var btn = document.getElementById('themeGenerateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+  fetch('/api/formula/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: text })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(result) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-magic"></i> Generate';
+
+    var themeHtml = '<div><strong>Theme:</strong> ' + esc(text) + '</div>';
+    themeHtml += '<div class="theme-families">';
+    result.theme.top_families.forEach(function(f) {
+      themeHtml += '<span class="theme-family-tag">' + esc(f.family) + ' ' + Math.round(f.weight * 100) + '%</span>';
+    });
+    themeHtml += '</div>';
+    themeHtml += '<div style="margin-top:6px;font-size:0.75rem;color:var(--text-muted)">' +
+      result.materials.length + ' materials selected | ' +
+      'Top: ' + result.layers.top.length + ' | Heart: ' + result.layers.heart.length + ' | Base: ' + result.layers.base.length +
+      '</div>';
+    themeHtml += '<div class="theme-actions">' +
+      '<button class="theme-apply-btn" onclick="applyGeneratedFormula()"><i class="fas fa-check"></i> Add to Formula</button>' +
+      '<button class="theme-apply-btn" onclick="clearFormula(); applyGeneratedFormula()"><i class="fas fa-redo"></i> Replace Formula</button>' +
+    '</div>';
+
+    var resultEl = document.getElementById('themeResult');
+    resultEl.innerHTML = themeHtml;
+    resultEl.className = 'theme-result visible';
+
+    window._generatedFormula = result.materials.map(function(m) {
+      return { sku: m.sku, name: m.raw_material, image: m.image_url, pct: 0 };
+    });
+  })
+  .catch(function(err) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-magic"></i> Generate';
+    console.error('Failed to generate formula:', err);
+  });
+}
+
+function applyGeneratedFormula() {
+  if (!window._generatedFormula || window._generatedFormula.length === 0) return;
+  var existing = getFormula();
+  var existingSkus = new Set(existing.map(function(f) { return f.sku; }));
+  window._generatedFormula.forEach(function(f) {
+    if (!existingSkus.has(f.sku)) {
+      existing.push(f);
+    }
+  });
+  saveFormula(existing);
+  loadProducts(currentPage);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   loadCategories();
   loadProducts();
   updateFormulaUI();
+  showThemeSection();
   searchInput.focus();
 });
