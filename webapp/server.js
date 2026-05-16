@@ -18,23 +18,88 @@ app.use(limiter);
 app.use(express.json());
 
 let products = [];
+let searchIndex = { tokens: {} };
 let syncState = { running: false, progress: 0, total: 0, current: '', message: '', log: [] };
+
+const FIELD_WEIGHTS = {
+  raw_material: 100,
+  sku: 80,
+  cas: 80,
+  synonyms: 30,
+  description: 10,
+  odour: 5
+};
+
+const NON_MATERIAL_SKU_PREFIXES = new Set([
+  'BOT', 'FCO', 'CLK', 'LAB', 'MIN', 'FTE', 'WKB', 'TPW',
+  'BOD', 'HAI', 'HAN', 'SHA', 'SHW', 'SOA', 'STR', 'MIX',
+]);
+
+function isRawMaterial(p) {
+  const sku = (p.sku || '').trim();
+  if (sku && NON_MATERIAL_SKU_PREFIXES.has(sku.substring(0, 3).toUpperCase())) return false;
+  const name = (p.raw_material || '').toLowerCase();
+  const patterns = [
+    'glass bottles', 'amber glass bottles',
+    'foundation course', 'online course',
+    'colour kit', 'color kit',
+    'lab essentials', 'starter set', 'explorer set', 'compact set', 'full-display set',
+    'creation system', 'digital scale', 'mini scale',
+    'workbook', 'perfumer\'s wizard',
+    'base - unscented', 'base (unscented)',
+    'smelling strips', 'mixing pots',
+  ];
+  return !patterns.some(pattern => name.includes(pattern));
+}
+
+function tokenize(text) {
+  if (!text) return [];
+  return text.toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(t => t.length >= 2);
+}
+
+function buildSearchIndex() {
+  searchIndex = { tokens: {} };
+  for (let i = 0; i < products.length; i++) {
+    const p = products[i];
+    for (const [field, weight] of Object.entries(FIELD_WEIGHTS)) {
+      const tokens = tokenize(p[field]);
+      for (const token of tokens) {
+        if (!searchIndex.tokens[token]) searchIndex.tokens[token] = new Set();
+        searchIndex.tokens[token].add(i);
+      }
+    }
+  }
+  const tokenCount = Object.keys(searchIndex.tokens).length;
+  console.log(`Search index built: ${tokenCount} tokens, ${products.length} products`);
+}
 
 async function loadProducts() {
   try {
     const raw = await loadRawMaterials();
-    products = raw.filter(p => p.raw_material && p.raw_material.trim() !== '');
+    const withName = raw.filter(p => p.raw_material && p.raw_material.trim() !== '');
     const emptyProducts = raw.filter(p => !p.raw_material || p.raw_material.trim() === '');
-    console.log(`Loaded ${products.length} products (filtered ${emptyProducts.length} empty)`);
+    products = withName.filter(isRawMaterial);
+    const nonMaterials = withName.filter(p => !isRawMaterial(p));
+    console.log(`Loaded ${products.length} raw materials (filtered ${emptyProducts.length} empty, ${nonMaterials.length} non-material)`);
 
     if (emptyProducts.length > 0) {
       const emptyPath = path.join(__dirname, '..', 'data', 'empty_products.json');
       await fs.writeFile(emptyPath, JSON.stringify(emptyProducts, null, 2), 'utf8');
       console.log(`Empty products list saved to data/empty_products.json`);
     }
+    if (nonMaterials.length > 0) {
+      const nonMatPath = path.join(__dirname, '..', 'data', 'non_material_products.json');
+      await fs.writeFile(nonMatPath, JSON.stringify(nonMaterials.map(p => ({ pro_id: p.pro_id, sku: p.sku, name: p.raw_material })), null, 2), 'utf8');
+      console.log(`Non-material products list saved to data/non_material_products.json`);
+    }
+
+    buildSearchIndex();
   } catch (e) {
     console.warn('No data file found — start with empty data. Click Sync to crawl.');
     products = [];
+    searchIndex = { tokens: {} };
   }
 }
 
@@ -49,8 +114,30 @@ function searchProducts(query, abcFilter, limit = 20, offset = 0) {
 
   if (query) {
     const q = query.toLowerCase().trim();
+    const queryTokens = tokenize(q);
+
+    let candidateIndices = null;
+    for (const token of queryTokens) {
+      if (searchIndex.tokens[token]) {
+        if (!candidateIndices) {
+          candidateIndices = new Set(searchIndex.tokens[token]);
+        } else {
+          for (const idx of searchIndex.tokens[token]) {
+            candidateIndices.add(idx);
+          }
+        }
+      }
+    }
+
+    let candidates;
+    if (candidateIndices) {
+      candidates = [...candidateIndices].map(i => products[i]);
+    } else {
+      candidates = results;
+    }
+
     const scored = [];
-    for (const p of results) {
+    for (const p of candidates) {
       let score = 0;
       const name = (p.raw_material || '').toLowerCase();
       const desc = (p.description || '').toLowerCase();
@@ -73,10 +160,9 @@ function searchProducts(query, abcFilter, limit = 20, offset = 0) {
       if (desc.includes(q)) score += 10;
       if (odour.includes(q)) score += 5;
 
-      if (score > 0) {
-        scored.push({ product: p, score });
-      }
+      if (score > 0) scored.push({ product: p, score });
     }
+
     scored.sort((a, b) => b.score - a.score);
     results = scored.map(s => s.product);
   }

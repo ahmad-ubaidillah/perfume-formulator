@@ -1,0 +1,132 @@
+[
+  {
+    "pro_id": "BOTAM12M",
+    "sku": "BOTAM12M",
+    "name": "Amber Glass Bottles 12ml"
+  },
+  {
+    "pro_id": "BOTAMB30",
+    "sku": "BOTAMB30",
+    "name": "Amber Glass Bottles 30ml"
+  },
+  {
+    "pro_id": "BOTAMB05",
+    "sku": "BOTAMB05",
+    "name": "Amber Glass Bottles 5ml"
+  },
+  {
+    "pro_id": "BOTAMB60",
+    "sku": "BOTAMB60",
+    "name": "Amber Glass Bottles 60ml"
+  },
+  {
+    "pro_id": "SHAMPADD",
+    "sku": "SHAMPADD",
+    "name": "Anti-dandruff Shampoo Base - unscented"
+  },
+  {
+    "pro_id": "BODYLOTN",
+    "sku": "BODYLOTN",
+    "name": "Body Lotion Base - unscented"
+  },
+  {
+    "pro_id": "CLKIT3",
+    "sku": "CLKIT3",
+    "name": "Colour Kit"
+  },
+  {
+    "pro_id": "FCOLINEF",
+    "sku": "FCOLINEF",
+    "name": "FOUNDATION COURSE ONLINE"
+  },
+  {
+    "pro_id": "HAIRCOND",
+    "sku": "HAIRCOND",
+    "name": "Hair Conditioner Base - unscented"
+  },
+  {
+    "pro_id": "HANDLOTN",
+    "sku": "HANDLOTN",
+    "name": "Hand Lotion Base - unscented"
+  },
+  {
+    "pro_id": "LABKIT01",
+    "sku": "LABKIT01",
+    "name": "Lab Essentials Starter Set"
+  },
+  {
+    "pro_id": "SHAMPBBY",
+    "sku": "SHAMPBBY",
+    "name": "Mild Baby Shampoo Base - unscented"
+  },
+  {
+    "pro_id": "MINISCAL",
+    "sku": "MINISCAL",
+    "name": "Mini Digital Scale"
+  },
+  {
+    "pro_id": "MINISNIF",
+    "sku": "MINISNIF",
+    "name": "Mini Sniff Smelling Strips"
+  },
+  {
+    "pro_id": "MIXPOT50",
+    "sku": "MIXPOT50",
+    "name": "Mixing Pots (Pack of 50)"
+  },
+  {
+    "pro_id": "STRIP14C",
+    "sku": "STRIP14C",
+    "name": "Professional 14cm Smelling Strips"
+  },
+  {
+    "pro_id": "SHAMPDRY",
+    "sku": "SHAMPDRY",
+    "name": "Shampoo Base for Dry Hair - unscented"
+  },
+  {
+    "pro_id": "SHAMPNOR",
+    "sku": "SHAMPNOR",
+    "name": "Shampoo Base for Normal Hair (unscented)"
+  },
+  {
+    "pro_id": "SHWERGEL",
+    "sku": "SHWERGEL",
+    "name": "Shower Gel Base (unscented)"
+  },
+  {
+    "pro_id": "SOAPCLER",
+    "sku": "SOAPCLER",
+    "name": "Soap Clear Translucent Glycerine - unscented"
+  },
+  {
+    "pro_id": "SOAPWHIT",
+    "sku": "SOAPWHIT",
+    "name": "Soap White Glycerine - unscented"
+  },
+  {
+    "pro_id": "FTECPW10",
+    "sku": "FTECPW10",
+    "name": "The F-TECPW Pro Perfume Creation System 10cc Explorer Set"
+  },
+  {
+    "pro_id": "FTECPW30",
+    "sku": "FTECPW30",
+    "name": "The F-TECPW Pro Perfume Creation System 30cc Compact Set"
+  },
+  {
+    "pro_id": "FTECPW60",
+    "sku": "FTECPW60",
+    "name": "The F-TECPW Pro Perfume Creation System 60cc Full-Display Set"
+  },
+  {
+    "pro_id": "TPW11111",
+    "sku": "TPW11111",
+    "name": "The Perfumer's Wizard Free Access"
+  },
+  {
+    "pro_id": "WKBKFREE",
+    "sku": "WKBKFREE",
+    "name": "The Perfumer's Workbook (Free Version)"
+  }
+]

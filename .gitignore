@@ -6,3 +6,8 @@ dist/
 __pycache__/
 *.pyc
 *.csv
+
+# Generated data files (sync via UI)
+data/raw_materials.json
+data/empty_products.json
+data/sync_cache.json

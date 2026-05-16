@@ -1,21 +1,54 @@
 const cheerio = require('cheerio');
 const fs = require('fs').promises;
 const path = require('path');
+const crypto = require('crypto');
 
-// Configuration
 const BASE_URL = 'https://www.perfumersworld.com';
 const LISTING_URL = `${BASE_URL}/perfume-supplies.php`;
-const BATCH_SIZE = 5; // concurrent requests
-const DELAY_MS = 500; // ms between batches
+const CONCURRENCY = 5;
+const DELAY_MS = 200;
 const MAX_RETRIES = 3;
+const CACHE_TTL_HOURS = 24;
+
+const NON_MATERIAL_SKU_PREFIXES = new Set([
+  'BOT', 'FCO', 'CLK', 'LAB', 'MIN', 'FTE', 'WKB', 'TPW',
+  'BOD', 'HAI', 'HAN', 'SHA', 'SHW', 'SOA', 'STR', 'MIX',
+]);
+
+function isRawMaterial(product) {
+  const sku = (product.sku || '').trim();
+  if (sku) {
+    const prefix = sku.substring(0, 3).toUpperCase();
+    if (NON_MATERIAL_SKU_PREFIXES.has(prefix)) return false;
+  }
+
+  const name = (product.raw_material || '').toLowerCase();
+  const nonMaterialPatterns = [
+    'glass bottles', 'amber glass bottles',
+    'foundation course', 'online course',
+    'colour kit', 'color kit',
+    'lab essentials', 'starter set', 'explorer set', 'compact set', 'full-display set',
+    'creation system',
+    'digital scale', 'mini scale',
+    'workbook', 'perfumer\'s wizard',
+    'base - unscented', 'base (unscented)',
+    'smelling strips', 'mixing pots',
+  ];
+  for (const pattern of nonMaterialPatterns) {
+    if (name.includes(pattern)) return false;
+  }
+
+  return true;
+}
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const OUTPUT_FILE = path.join(DATA_DIR, 'raw_materials.json');
+const CACHE_FILE = path.join(DATA_DIR, 'sync_cache.json');
 
-// Sleep utility
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// Fetch HTML with retries
+const forceSync = process.argv.includes('--force');
+
 async function fetchHTML(url, retries = MAX_RETRIES) {
   for (let i = 0; i < retries; i++) {
     try {
@@ -36,7 +69,31 @@ async function fetchHTML(url, retries = MAX_RETRIES) {
   }
 }
 
-// Step 1: Extract all product IDs from listing page
+async function loadCache() {
+  try {
+    const raw = await fs.readFile(CACHE_FILE, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+async function saveCache(cache) {
+  await fs.writeFile(CACHE_FILE, JSON.stringify(cache, null, 2), 'utf8');
+}
+
+function contentHash(product) {
+  const key = `${product.raw_material || ''}|${product.description || ''}|${product.price || ''}`;
+  return crypto.createHash('md5').update(key).digest('hex');
+}
+
+function isCacheValid(cache, proId) {
+  if (forceSync || !cache[proId]) return false;
+  const entry = cache[proId];
+  const age = Date.now() - new Date(entry.last_synced).getTime();
+  return age < CACHE_TTL_HOURS * 3600 * 1000;
+}
+
 async function extractProductIDs() {
   console.log('Fetching listing page...');
   const html = await fetchHTML(LISTING_URL);
@@ -54,7 +111,6 @@ async function extractProductIDs() {
   return idList;
 }
 
-// Step 2: Scrape a single product page
 async function scrapeProduct(proId) {
   const url = `${BASE_URL}/view.php?pro_id=${proId}`;
   const html = await fetchHTML(url);
@@ -62,42 +118,24 @@ async function scrapeProduct(proId) {
 
   const product = { pro_id: proId };
 
-  // SKU
   const skuEl = $('h5:contains("SKU")');
-  if (skuEl.length) {
-    product.sku = skuEl.text().replace('SKU', '').trim();
-  }
+  if (skuEl.length) product.sku = skuEl.text().replace('SKU', '').trim();
 
-  // Name
   const nameEl = $('h1[itemprop="name"]');
-  if (nameEl.length) {
-    product.raw_material = nameEl.text().trim();
-  }
+  if (nameEl.length) product.raw_material = nameEl.text().trim();
 
-  // Description
   const descEl = $('p[itemprop="description"]');
-  if (descEl.length) {
-    product.description = descEl.text().trim();
-  }
+  if (descEl.length) product.description = descEl.text().trim();
 
-  // Price
   const priceEl = $('h5 strong').first();
-  if (priceEl.length) {
-    product.price = priceEl.text().trim();
-  }
+  if (priceEl.length) product.price = priceEl.text().trim();
 
-  // Product image
   const imgEl = $('img[itemprop="image"]');
   if (imgEl.length) {
     const imgSrc = imgEl.attr('src');
-    if (imgSrc) {
-      product.image_url = imgSrc.startsWith('http') ? imgSrc : `${BASE_URL}/${imgSrc}`;
-    }
+    if (imgSrc) product.image_url = imgSrc.startsWith('http') ? imgSrc : `${BASE_URL}/${imgSrc}`;
   }
 
-  // --- Sections ---
-
-  // Odour
   const odourBox = $('.box-title').filter((_, el) => $(el).text().trim() === 'Odour').closest('.box');
   if (odourBox.length) {
     const paras = [];
@@ -107,45 +145,25 @@ async function scrapeProduct(proId) {
     });
     product.odour_raw = paras.join(' | ');
 
-    // Extract specific fields from odour
     odourBox.find('p').each((_, el) => {
       const text = $(el).text().trim();
       const odourMatch = text.match(/Odour\s*=>\s*(.+)/i);
-      if (odourMatch) {
-        product.odour = odourMatch[1].trim();
-      }
-      if (text.startsWith('Synaesthesia=>')) {
-        product.synaesthesia = text.replace(/^Synaesthesia=>\s*/i, '').trim();
-      }
-      if (text.startsWith('Perfume-Uses=>')) {
-        product.perfume_uses = text.replace(/^Perfume-Uses=>\s*/i, '').trim();
-      }
-      if (text.startsWith('Occurs-in=>')) {
-        product.occurs_in = text.replace(/^Occurs-in=>\s*/i, '').trim();
-      }
-      if (text.startsWith('Tips=>')) {
-        product.tips = text.replace(/^Tips=>\s*/i, '').trim();
-      }
-      if (text.startsWith('Blends-well-with=>') || text.startsWith('Blends Well With=>')) {
-        product.blends_well_with = text.replace(/^Blends[- ]well[- ]with=>\s*/i, '').trim();
-      }
+      if (odourMatch) product.odour = odourMatch[1].trim();
+      if (text.startsWith('Synaesthesia=>')) product.synaesthesia = text.replace(/^Synaesthesia=>\s*/i, '').trim();
+      if (text.startsWith('Perfume-Uses=>')) product.perfume_uses = text.replace(/^Perfume-Uses=>\s*/i, '').trim();
+      if (text.startsWith('Occurs-in=>')) product.occurs_in = text.replace(/^Occurs-in=>\s*/i, '').trim();
+      if (text.startsWith('Tips=>')) product.tips = text.replace(/^Tips=>\s*/i, '').trim();
+      if (text.startsWith('Blends-well-with=>') || text.startsWith('Blends Well With=>')) product.blends_well_with = text.replace(/^Blends[- ]well[- ]with=>\s*/i, '').trim();
     });
 
     const htmlContent = odourBox.html() || '';
     const perfumeUsesMatch = htmlContent.match(/<b>Perfume-Uses=&gt;<\/b>\s*([^<]+)/i) || htmlContent.match(/<b>Perfume-Uses=<\/b>\s*([^<]+)/i);
-    if (perfumeUsesMatch && !product.perfume_uses) {
-      product.perfume_uses = perfumeUsesMatch[1].trim();
-    }
+    if (perfumeUsesMatch && !product.perfume_uses) product.perfume_uses = perfumeUsesMatch[1].trim();
     const occursMatch = htmlContent.match(/<b>Occurs-in=&gt;<\/b>\s*([^<]+)/i) || htmlContent.match(/<b>Occurs-in=<\/b>\s*([^<]+)/i);
-    if (occursMatch && !product.occurs_in) {
-      product.occurs_in = occursMatch[1].trim();
-    }
+    if (occursMatch && !product.occurs_in) product.occurs_in = occursMatch[1].trim();
     const blendsMatch = htmlContent.match(/<Blends-well-with=>\s*([^<]+)/i) || htmlContent.match(/<Blends-well-with=&gt;\s*([^<]+)/i);
-    if (blendsMatch && !product.blends_well_with) {
-      product.blends_well_with = blendsMatch[1].trim();
-    }
+    if (blendsMatch && !product.blends_well_with) product.blends_well_with = blendsMatch[1].trim();
 
-    // Relative Odor Impact and Odor Life
     odourBox.find('a').each((_, el) => {
       const text = $(el).text().trim();
       const impactMatch = text.match(/Relative Odor Impact\s+([\d,.]+)/i);
@@ -155,16 +173,12 @@ async function scrapeProduct(proId) {
     });
   }
 
-  // Synonyms
   const synBox = $('.box-title').filter((_, el) => $(el).text().trim() === 'Synonyms').closest('.box');
   if (synBox.length) {
     const synText = synBox.find('p').first().text().trim();
-    if (synText) {
-      product.synonyms = synText;
-    }
+    if (synText) product.synonyms = synText;
   }
 
-  // Description table (Physical State, etc.)
   const descBox = $('.box-title').filter((_, el) => $(el).text().trim() === 'Description').closest('.box');
   if (descBox.length) {
     descBox.find('table tr').each((_, tr) => {
@@ -186,7 +200,6 @@ async function scrapeProduct(proId) {
     });
   }
 
-  // Regulatory (CAS, FEMA)
   const regBox = $('.box-title').filter((_, el) => $(el).text().trim() === 'Regulatory').closest('.box');
   if (regBox.length) {
     regBox.find('table tr').each((_, tr) => {
@@ -201,10 +214,8 @@ async function scrapeProduct(proId) {
     });
   }
 
-  // Perfumery Applications (Typical Usage)
   const appBox = $('.box-title').filter((_, el) => $(el).text().trim() === 'Perfumery Applications').closest('.box');
   if (appBox.length) {
-    // Look for typical usage numbers in description-percentage spans
     appBox.find('.description-percentage').each((_, el) => {
       const text = $(el).text().trim();
       const parent = $(el).closest('.description-block');
@@ -214,7 +225,6 @@ async function scrapeProduct(proId) {
       else if (label.includes('maximum') || label.includes('max')) product.typical_usage_maximum = text;
     });
 
-    // Fallback: parse from text
     if (!product.typical_usage_from) {
       const text = appBox.text();
       const fromMatch = text.match(/from\s+([\d.]+%)/i);
@@ -226,26 +236,18 @@ async function scrapeProduct(proId) {
     }
   }
 
-  // Application Suitability
   const suitBox = $('.box-title').filter((_, el) => $(el).text().trim() === 'Application Suitability').closest('.box');
   if (suitBox.length) {
     const apps = [];
     suitBox.find('.progress-group').each((_, el) => {
       const name = $(el).find('.progress-text').text().trim();
       const rating = $(el).find('.progress-number b').text().trim();
-      if (name) {
-        apps.push({ name, rating: rating || '' });
-      }
+      if (name) apps.push({ name, rating: rating || '' });
     });
-    if (apps.length > 0) {
-      product.application_suitability = apps.map(a => `${a.name}: ${a.rating}`).join('; ');
-    }
+    if (apps.length > 0) product.application_suitability = apps.map(a => `${a.name}: ${a.rating}`).join('; ');
   }
 
-  // ABC Donut - extract from script or image references
   const htmlFull = $.html();
-
-  // Extract Morris.Donut data
   const morrisMatch = htmlFull.match(/Morris\.Donut\(\{[\s\S]*?data:\s*\[([\s\S]*?)\]/);
   if (morrisMatch) {
     const dataBlock = morrisMatch[1];
@@ -257,94 +259,135 @@ async function scrapeProduct(proId) {
     }
     if (entries.length > 0) {
       product.abc_donut_data = entries;
-      // Use the highest-value category as the primary abc_category
       entries.sort((a, b) => b.value - a.value);
       product.abc_category = entries[0].label.toLowerCase().replace(/\s+/g, '-');
       product.abc_donut = `${BASE_URL}/images/syn/${product.abc_category}.jpg`;
     }
   }
 
-  // Fallback: extract from image references
   if (!product.abc_donut) {
     const donutMatch = htmlFull.match(/donut\s*=\s*'([^']+)'/);
     if (donutMatch) {
       let donutPath = donutMatch[1];
-      if (donutPath.startsWith('images/')) {
-        donutPath = `${BASE_URL}/${donutPath}`;
-      }
+      if (donutPath.startsWith('images/')) donutPath = `${BASE_URL}/${donutPath}`;
       product.abc_donut = donutPath;
       const catMatch = donutPath.match(/images\/syn\/([^\/]+)\.jpg/);
-      if (catMatch) {
-        product.abc_category = catMatch[1];
-      }
+      if (catMatch) product.abc_category = catMatch[1];
     }
   }
 
-  // Source URL
   product.source_url = url;
-
   return product;
 }
 
-// Step 3: Scrape all products in batches
-async function scrapeAllProducts(ids) {
-  const products = [];
+async function scrapeAllProducts(ids, cache) {
+  const results = {};
   const total = ids.length;
+  let completed = 0;
+  let batchCounter = 0;
+  const totalBatches = Math.ceil(total / CONCURRENCY);
 
-  for (let i = 0; i < total; i += BATCH_SIZE) {
-    const batch = ids.slice(i, i + BATCH_SIZE);
-    const batchNum = Math.floor(i / BATCH_SIZE) + 1;
-    const totalBatches = Math.ceil(total / BATCH_SIZE);
+  const queue = [...ids];
+  const inFlight = new Map();
 
-    console.log(`Batch ${batchNum}/${totalBatches} (products ${i + 1}-${Math.min(i + BATCH_SIZE, total)})`);
+  async function processNext() {
+    if (queue.length === 0) return;
+    const proId = queue.shift();
 
-    const results = await Promise.allSettled(
-      batch.map(id => scrapeProduct(id).then(p => ({ ...p, _status: 'ok' })))
-    );
-
-    for (const result of results) {
-      if (result.status === 'fulfilled' && result.value._status === 'ok') {
-        const p = result.value;
-        delete p._status;
-        products.push(p);
-        console.log(`  OK: ${p.raw_material || p.sku || p.pro_id}`);
-      } else {
-        const proId = batch[results.indexOf(result)];
-        console.log(`  FAIL: ${proId} - ${result.reason?.message || 'unknown error'}`);
-      }
+    if (isCacheValid(cache, proId)) {
+      results[proId] = { product: cache[proId].data, cached: true };
+      completed++;
+      const name = cache[proId].data.raw_material || proId;
+      console.log(`  OK: ${name} [cached]`);
+      processNext();
+      return;
     }
 
-    // Rate limiting delay between batches
-    if (i + BATCH_SIZE < total) {
-      await sleep(DELAY_MS);
+    try {
+      const product = await scrapeProduct(proId);
+      results[proId] = { product, cached: false };
+      completed++;
+      console.log(`  OK: ${product.raw_material || proId}`);
+    } catch (err) {
+      results[proId] = { error: err.message, cached: false };
+      completed++;
+      console.log(`  FAIL: ${proId} - ${err.message}`);
+    }
+
+    if (queue.length > 0) {
+      setTimeout(processNext, DELAY_MS);
     }
   }
 
-  return products;
+  for (let i = 0; i < Math.min(CONCURRENCY, total); i++) {
+    processNext();
+  }
+
+  const logInterval = setInterval(() => {
+    batchCounter++;
+    console.log(`Batch ${Math.min(batchCounter, totalBatches)}/${totalBatches}`);
+    if (completed >= total) clearInterval(logInterval);
+  }, 5000);
+
+  while (completed < total) {
+    await sleep(200);
+  }
+
+  clearInterval(logInterval);
+
+  const products = [];
+  const newCache = { ...cache };
+  let skipped = 0;
+
+  for (const proId of ids) {
+    const entry = results[proId];
+    if (entry && entry.product) {
+      if (!isRawMaterial(entry.product)) {
+        skipped++;
+        continue;
+      }
+      products.push(entry.product);
+      newCache[proId] = {
+        last_synced: new Date().toISOString(),
+        content_hash: contentHash(entry.product),
+        data: entry.product
+      };
+    }
+  }
+
+  if (skipped > 0) {
+    console.log(`\nFiltered ${skipped} non-raw-material products (bottles, kits, courses, bases, etc.)`);
+  }
+
+  return { products, newCache };
 }
 
-// Main
 async function main() {
-  console.log('=== PerfumersWorld Raw Material Crawler ===');
+  console.log('=== Perfume Formulator Crawler ===');
   console.log('');
 
   await fs.mkdir(DATA_DIR, { recursive: true });
 
   try {
-    // Step 1: Get all product IDs
     const ids = await extractProductIDs();
-    if (ids.length === 0) {
-      throw new Error('No products found on listing page');
+    if (ids.length === 0) throw new Error('No products found on listing page');
+
+    const cache = forceSync ? {} : await loadCache();
+    if (forceSync) {
+      console.log('\nForce sync — ignoring cache');
+    } else {
+      const cachedCount = ids.filter(id => isCacheValid(cache, id)).length;
+      console.log(`\nCache: ${cachedCount}/${ids.length} products up to date (${CACHE_TTL_HOURS}h TTL)`);
     }
 
-    // Step 2: Scrape all products
     console.log('\nScraping product details...');
-    const products = await scrapeAllProducts(ids);
+    const { products, newCache } = await scrapeAllProducts(ids, cache);
 
-    // Step 3: Save data
     console.log(`\nSaving ${products.length} products...`);
     await fs.writeFile(OUTPUT_FILE, JSON.stringify(products, null, 2), 'utf8');
+    await saveCache(newCache);
     console.log(`Data saved to ${OUTPUT_FILE}`);
+    console.log(`Cache saved to ${CACHE_FILE}`);
     console.log('Done!');
 
   } catch (err) {
