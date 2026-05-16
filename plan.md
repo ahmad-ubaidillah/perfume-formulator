@@ -1,114 +1,103 @@
-# PerfumersWorld Raw Material Library: Project Plan
+# PerfumersWorld Raw Material Library - Project Plan & Task List
 
-## Project Vision
-Create a comprehensive, searchable library of all raw materials from PerfumersWorld.com with a simple black-and-white web interface. The library will allow users to search by material name, CAS number, synonyms, odor description, or description text, and filter by ABC donut categories.
+## 📌 Project Overview
 
-## Requirements
+A comprehensive library of all raw materials from PerfumersWorld.com, featuring:
+- Automated crawler to scrape product data
+- Black-and-white web interface with advanced search
+- ABC donut category filtering
+- Full product detail view with metadata
 
-### Core Features
-1. **Complete Crawler**
-   - Scrape all raw materials from PerfumersWorld.com
-   - Handle pagination across all product pages
-   - Extract all available data fields
-   - Implement rate limiting and error handling
+## 🔍 Current Project Status
 
-2. **Simple Black-and-White Web Interface**
-   - Clean, minimal design with black text on white background
-   - Responsive layout for all devices
-   - Fast loading with minimal JavaScript
+✅ **Crawler**: Fully functional, extracts 100+ materials
+✅ **Data Storage**: JSON file (`data/raw_materials.json`) is generated
+✅ **Frontend**: Basic SPA with search, filters, and detail view
+✅ **Backend**: Express.js server with REST API
 
-3. **Advanced Search Functionality**
-   - Search by material name (exact or partial match)
-   - Search by CAS number
-   - Search by synonyms (multi-term matching)
-   - Search by odor description (partial text match)
-   - Search by description text (partial text match)
-   - Case-insensitive search
-   - Real-time search results
+## 🛠️ Project Health Check
 
-4. **ABC Donut Filter**
-   - Filter results by ABC donut category (e.g., citrus, floral, woody)
-   - Display available ABC categories as filter options
-   - Show count of products per category
-   - Allow multiple category selection
+| Component | Status | Notes |
+|---------|--------|-------|
+| Crawler | ✅ | Scrapes product details, handles retries, rate limiting |
+| Data Storage | ✅ | JSON file with all fields including CAS, odour, applications |
+| Backend API | ✅ | `/api/products`, `/api/detail`, `/api/categories` working |
+| Frontend | ✅ | Search, filters, detail modal, responsive layout |
+| Error Handling | ⚠️ | Limited retry logic in frontend, no fallback UI for errors |
+| Performance | ⚠️ | No pagination, loads all data at once |
+| Security | ⚠️ | No rate limiting or CORS protection |
 
-5. **Product Detail View**
-   - Display all available information for a selected product
-   - Show ABC donut image
-   - Include all metadata fields
-   - Simple navigation back to search results
+## 📋 Task List (Priority: High → Low)
 
-### Technical Requirements
-- **Data Storage**: JSON file with normalized data structure
-- **Crawler**: Node.js with Puppeteer or Cheerio for scraping
-- **Backend**: Express.js with REST API
-- **Frontend**: HTML, CSS, and minimal JavaScript
-- **Deployment**: Docker container with environment variables
-- **Scheduling**: Cron job to update data nightly
+### ✅ **Critical Fixes (High Priority)**
 
-## Updated Task List
+- [x] **Crawler stability**: Add retry logic for failed requests
+- [x] **Data consistency**: Ensure all fields are properly extracted
+- [x] **Frontend loading state**: Show spinner during fetch
+- [x] **Error handling**: Display error messages when API fails
+- [x] **Search edge cases**: Handle empty results gracefully
 
-### Phase 1: Project Foundation
-- [x] Create README.md with project overview, setup, and contribution guidelines
-- [x] Add package.json scripts for development and production
-- [ ] Set up ESLint and Prettier for code quality
-- [x] Create .gitignore for node_modules, .env, and other temp files
-- [x] Initialize git repository
+### 🔧 **Core Improvements (High Priority)**
 
-### Phase 2: Data Pipeline
-- [x] Create crawler directory and add scraping logic
-- [x] Implement scraper to fetch data from PerfumersWorld.com
-- [x] Add data transformation pipeline to normalize formats
-- [ ] Create validation rules for data integrity
-- [x] Implement error handling for failed scrapes
-- [ ] Add scheduled job to update data nightly
-- [ ] Create data schema documentation
+- [ ] **Add pagination**: Limit results to 20-50 per page
+- [ ] **Implement caching**: Cache API responses to reduce load
+- [ ] **Add loading indicators**: Visual feedback during data fetch
+- [ ] **Improve error messages**: User-friendly error UI
+- [ ] **Add search history**: Remember recent queries
+- [ ] **Optimize image loading**: Lazy load ABC donut images
 
-### Phase 3: Backend Development
-- [x] Implement Express.js server with API routes
-- [x] Create search endpoint with multi-field support
-- [x] Implement ABC donut category endpoint
-- [x] Add filtering by ABC donut
-- [x] Implement product detail endpoint
-- [x] Add error handling and validation
-- [ ] Set up environment variables
+### 🎨 **UI/UX Enhancements (Medium Priority)**
 
-### Phase 4: Frontend Development
-- [x] Create simple black-and-white HTML template
-- [x] Implement search input with real-time results
-- [x] Add ABC donut filter with category selection
-- [x] Create product detail page
-- [x] Implement responsive design
-- [x] Add loading states and error handling
+- [ ] **Responsive design**: Ensure mobile compatibility
+- [ ] **Accessibility**: Add ARIA labels, keyboard navigation
+- [ ] **Dark mode toggle**: Switch between light/dark themes
+- [ ] **Better typography**: Improve readability with spacing
+- [ ] **Filter chips**: Visual feedback for active filters
+- [ ] **Animation effects**: Subtle transitions for better UX
 
-### Phase 5: Enhanced Features
-- [ ] Implement search suggestions and autocomplete
-- [ ] Add pagination for large result sets
-- [ ] Improve loading states and error handling
-- [ ] Add mobile-specific optimizations
-- [ ] Implement user preferences (dark/light mode, default filters)
+### 🛡️ **Security & Performance (Medium Priority)**
 
-### Phase 6: Deployment
-- [ ] Create Dockerfile for containerization
-- [ ] Set up environment variables and config files
-- [ ] Implement production server setup
-- [ ] Add monitoring and logging
-- [ ] Create deployment scripts
-- [ ] Set up CI/CD pipeline
+- [ ] **Add rate limiting**: Prevent abuse of API endpoints
+- [ ] **Implement CORS**: Restrict access to trusted domains
+- [ ] **Add input sanitization**: Prevent XSS in search queries
+- [ ] **Optimize data size**: Compress JSON output
+- [ ] **Add health check endpoint**: `/health` for monitoring
 
-## Immediate Next Steps
-1. Create README.md with project description and setup instructions
-2. Add development scripts to package.json
-3. Set up basic linting and formatting
-4. Implement the data crawler to fetch fresh data
+### 📊 **Analytics & Monitoring (Low Priority)**
 
-## Success Criteria
-- All raw materials from PerfumersWorld.com are successfully scraped
-- Data is stored in a normalized JSON format
-- Web interface is simple, fast, and functional
-- Search works across all required fields
-- ABC donut filtering works correctly
-- Data is updated nightly via scheduled job
-- Project is containerized and deployable
+- [ ] **Add usage tracking**: Count searches, filter usage
+- [ ] **Log crawler errors**: Store failed scrapes for analysis
+- [ ] **Add monitoring dashboard**: Visualize data collection stats
+- [ ] **Implement backup**: Regular backups of `raw_materials.json`
 
-This project will become a comprehensive, searchable library of all perfumery raw materials from PerfumersWorld.com with a simple, efficient interface.
+### 📦 **Deployment & DevOps (Low Priority)**
+
+- [ ] **Create Dockerfile**: Containerize the application
+- [ ] **Add CI/CD pipeline**: Automated testing and deployment
+- [ ] **Set up reverse proxy**: Use Nginx for SSL termination
+- [ ] **Add environment variables**: Configurable settings
+- [ ] **Implement logging**: Structured logs with timestamps
+
+## 📅 Project Roadmap
+
+| Week | Focus Area | Deliverables |
+|------|------------|--------------|
+| 1 | Critical Fixes | All high-priority bugs resolved, error handling improved |
+| 2 | Core Improvements | Pagination, caching, loading states implemented |
+| 3 | UI/UX Enhancements | Responsive design, accessibility, dark mode |
+| 4 | Security & Performance | Rate limiting, CORS, input sanitization |
+| 5 | Analytics & Monitoring | Usage tracking, error logging, backups |
+| 6 | Deployment & DevOps | Docker, CI/CD, reverse proxy setup |
+
+## 📌 Next Steps
+
+1. Run `node crawler/crawler.js` to ensure data is up-to-date
+2. Start server with `npm start`
+3. Open `http://localhost:5000` and test search functionality
+4. Begin implementing the top 5 tasks from the high-priority list
+
+> ✅ **Success Criteria**: All 100+ materials are correctly scraped, searchable, and displayable with no data loss or errors.
+
+---
+
+*Last updated: 2026-05-15*

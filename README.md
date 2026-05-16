@@ -1,14 +1,16 @@
-# PerfumersWorld Raw Material Library
+# Perfume Formulator
 
 ## Overview
-This project is a comprehensive library of all raw materials from PerfumersWorld.com, with a simple black-and-white web interface. The library allows users to search by material name, CAS number, synonyms, odor description, or description text, and filter by ABC donut categories.
+A comprehensive perfume raw material library web app with a built-in crawler, search, ABC donut filtering, formula builder, and real-time sync.
 
 ## Features
-- Complete crawler to scrape all raw materials from PerfumersWorld.com
-- Simple black-and-white web interface
-- Advanced search functionality across multiple fields
-- ABC donut category filtering
-- Product detail view with all metadata
+- Crawler to scrape all raw materials from PerfumersWorld.com
+- Advanced search with relevance scoring across name, CAS, synonyms, odour, and description
+- ABC donut category filtering with quick-filter pills
+- Product detail view with odour, usage, applications, and ABC donut bars
+- "My Formula" builder sidebar with add/remove, export, and localStorage persistence
+- Real-time sync progress bar (non-blocking) — sync without losing your place in the app
+- Empty data state with instructions to sync
 
 ## Getting Started
 
@@ -19,26 +21,24 @@ This project is a comprehensive library of all raw materials from PerfumersWorld
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/perfumersworld-library.git
-   cd perfumersworld-library
+   git clone https://github.com/ahmad-ubaidillah/perfume-formulator.git
+   cd perfume-formulator
    ```
 
 2. Install dependencies:
    ```bash
    npm install
+   cd webapp && npm install && cd ..
    ```
 
-3. Run the crawler to collect data:
-   ```bash
-   node crawler/crawler.js
-   ```
-
-4. Start the server:
+3. Start the server:
    ```bash
    npm start
    ```
 
-5. Open your browser and go to http://localhost:5000
+4. Open your browser and go to http://localhost:5000
+
+5. Click the **Sync** button to crawl all raw materials from PerfumersWorld.
 
 ## Usage
 
@@ -51,18 +51,27 @@ This project is a comprehensive library of all raw materials from PerfumersWorld
 
 ### Filter
 - Filter results by ABC donut category (e.g., citrus, floral, woody)
-- Display available ABC categories as filter options
-- Show count of products per category
-- Allow multiple category selection
+- Quick-filter pills for one-click category selection
+- Reset button to clear all filters
+
+### Sync
+- Click **Sync** in the navbar to start crawling
+- Progress bar shows real-time status without blocking the app
+- Expand log to see individual product results
+
+### Formula Builder
+- Click **+ Add** on any material to add to your formula
+- Open the formula panel to view, remove, or export
+- Export as `.txt` file
 
 ## Project Structure
 ```
 crawler/
   crawler.js          # Main crawler script
-  README.md           # Crawler documentation
 
 data/
   raw_materials.json  # Collected raw material data
+  empty_products.json # Products without raw_material field (non-material items)
 
 webapp/
   public/
@@ -71,39 +80,13 @@ webapp/
     style.css         # CSS styles
 
   server.js           # Express.js server
-  package.json        # Project dependencies
-  README.md           # Project documentation
+  package.json        # Webapp dependencies
 ```
 
-## Development
-
-### Scripts
-- `npm start`: Start the server
-- `node crawler/crawler.js`: Run the crawler
-- `npm run dev`: Start server in development mode
-
-### Testing
-- Unit tests: `npm test`
-- E2E tests: `npm run e2e`
-
-## Deployment
-
-### Docker
-```bash
-# Build image
-docker build -t perfumersworld-library .
-
-# Run container
-docker run -p 5000:5000 perfumersworld-library
-```
-
-### Production
-- Use PM2 to manage the server process
-- Set up reverse proxy with Nginx
-- Implement SSL/TLS encryption
-
-## Contributing
-Please read CONTRIBUTING.md for details on our code of conduct, and the process for submitting pull requests to us.
+## Scripts
+- `npm start` — Start the server (no auto-crawl)
+- `npm run crawler` — Run the crawler manually
+- `cd webapp && npm start` — Start from webapp directory
 
 ## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT

@@ -1,7 +1,7 @@
 {
-  "name": "perfumersworld-library",
+  "name": "perfume-formulator",
   "version": "1.0.0",
-  "description": "Comprehensive library of all raw materials from PerfumersWorld.com with search and filtering capabilities",
+  "description": "Perfume Formulator - Crawler + Web App",
   "main": "webapp/server.js",
   "scripts": {
     "start": "node webapp/server.js",
@@ -21,12 +21,13 @@
   "license": "MIT",
   "dependencies": {
     "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
     "puppeteer": "^20.0.0"
   },
   "devDependencies": {
+    "eslint": "^8.0.0",
     "jest": "^29.0.0",
     "playwright": "^1.40.0",
-    "eslint": "^8.0.0",
     "prettier": "^2.0.0"
   }
 }

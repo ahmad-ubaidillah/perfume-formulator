@@ -3,52 +3,87 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PerfumersWorld Raw Material Library</title>
+  <title>Perfume Formulator</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- NAVBAR -->
   <nav class="navbar">
     <div class="nav-container">
       <a href="/" class="nav-brand" onclick="event.preventDefault(); closeModal(); loadProducts();">
-        <i class="fas fa-flask"></i> PerfumersWorld Library
+        <i class="fas fa-flask"></i> Perfume Formulator
       </a>
       <div class="search-wrapper">
-        <input type="text" id="searchInput" placeholder="Search: name, odour, synonym, CAS..."
-               value="" class="search-input" onkeydown="if(event.key==='Enter')doSearch()">
-        <select id="abcFilter" class="abc-select" onchange="doSearch()">
-          <option value="">All ABC Donuts</option>
+        <div class="search-input-wrapper">
+          <input type="text" id="searchInput" placeholder="Search materials..."
+                 value="" class="search-input" autocomplete="off">
+          <div id="searchHistory" class="search-history" style="display:none"></div>
+        </div>
+        <select id="abcFilter" class="abc-select" onchange="onAbcFilterChange()">
+          <option value="">All ABC</option>
         </select>
-        <button class="search-btn" onclick="doSearch()"><i class="fas fa-search"></i></button>
-        <button class="clear-btn" onclick="clearFilters()" id="clearBtn" style="display:none">
-          <i class="fas fa-times"></i> Clear
+        <button class="reset-filter-btn" onclick="resetFilters()" id="resetBtn" style="display:none" title="Reset filters">
+          <i class="fas fa-undo"></i>
         </button>
       </div>
-      <div class="nav-stats">
+      <div class="nav-actions">
         <span class="stat" id="statTotal"><i class="fas fa-database"></i> 0</span>
         <span class="stat" id="statCount"><i class="fas fa-filter"></i> 0</span>
+        <button class="sync-btn" onclick="startSync()" id="syncBtn">
+          <i class="fas fa-sync-alt"></i> Sync
+        </button>
+        <button class="formula-toggle-btn" onclick="toggleFormulaPanel()">
+          <i class="fas fa-vial"></i> Formula
+          <span class="formula-count" id="formulaCount">0</span>
+        </button>
       </div>
     </div>
   </nav>
 
-  <!-- QUICK ABC FILTER PILLS -->
   <div class="quick-filters" id="quickFilters">
     <span class="filter-label"><i class="fas fa-layer-group"></i> Quick ABC:</span>
   </div>
 
-  <!-- MAIN CONTENT -->
-  <main class="main-content" id="mainContent">
-    <!-- Products grid rendered by JS -->
-  </main>
+  <div id="syncBar" class="sync-bar" style="display:none">
+    <div class="sync-bar-inner">
+      <i class="fas fa-sync-alt fa-spin" id="syncBarIcon"></i>
+      <span class="sync-bar-progress" id="syncBarProgress">0 / 0</span>
+      <span class="sync-bar-current" id="syncBarCurrent"></span>
+      <span class="sync-bar-pct" id="syncBarPct">0%</span>
+      <button class="sync-bar-toggle" onclick="toggleSyncLog()" title="Show log"><i class="fas fa-chevron-down" id="syncLogToggleIcon"></i></button>
+      <button class="sync-bar-dismiss" onclick="dismissSync()" title="Dismiss"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="sync-bar-log" id="syncBarLog" style="display:none"></div>
+  </div>
 
-  <!-- DETAIL MODAL -->
+  <div class="app-layout">
+    <main class="main-content" id="mainContent">
+      <div id="pagination" class="pagination"></div>
+    </main>
+
+    <aside class="formula-panel" id="formulaPanel">
+      <div class="formula-header">
+        <h3><i class="fas fa-vial"></i> My Formula</h3>
+        <button class="formula-close-btn" onclick="toggleFormulaPanel()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="formula-list" id="formulaList">
+        <div class="formula-empty">
+          <i class="fas fa-flask"></i>
+          <p>Click <strong>+ Add</strong> on any material to start building your formula</p>
+        </div>
+      </div>
+      <div class="formula-footer">
+        <button class="formula-clear-btn" onclick="clearFormula()"><i class="fas fa-trash"></i> Clear All</button>
+        <button class="formula-export-btn" onclick="exportFormula()"><i class="fas fa-download"></i> Export</button>
+      </div>
+    </aside>
+  </div>
+
   <div class="modal-overlay" id="detailModal" onclick="closeModal(event)">
     <div class="modal-content" id="modalContent"></div>
   </div>
 
-  <!-- FOOTER -->
   <footer class="footer">
-    <p>Data from <a href="https://www.perfumersworld.com" target="_blank">PerfumersWorld.com</a> | PerfumersWorld Raw Material Library</p>
+    <p>Built with data from <a href="https://www.perfumersworld.com" target="_blank">PerfumersWorld.com</a></p>
   </footer>
 
   <script src="app.js"></script>

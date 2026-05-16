@@ -86,6 +86,15 @@ async function scrapeProduct(proId) {
     product.price = priceEl.text().trim();
   }
 
+  // Product image
+  const imgEl = $('img[itemprop="image"]');
+  if (imgEl.length) {
+    const imgSrc = imgEl.attr('src');
+    if (imgSrc) {
+      product.image_url = imgSrc.startsWith('http') ? imgSrc : `${BASE_URL}/${imgSrc}`;
+    }
+  }
+
   // --- Sections ---
 
   // Odour
@@ -111,10 +120,30 @@ async function scrapeProduct(proId) {
       if (text.startsWith('Perfume-Uses=>')) {
         product.perfume_uses = text.replace(/^Perfume-Uses=>\s*/i, '').trim();
       }
+      if (text.startsWith('Occurs-in=>')) {
+        product.occurs_in = text.replace(/^Occurs-in=>\s*/i, '').trim();
+      }
       if (text.startsWith('Tips=>')) {
         product.tips = text.replace(/^Tips=>\s*/i, '').trim();
       }
+      if (text.startsWith('Blends-well-with=>') || text.startsWith('Blends Well With=>')) {
+        product.blends_well_with = text.replace(/^Blends[- ]well[- ]with=>\s*/i, '').trim();
+      }
     });
+
+    const htmlContent = odourBox.html() || '';
+    const perfumeUsesMatch = htmlContent.match(/<b>Perfume-Uses=&gt;<\/b>\s*([^<]+)/i) || htmlContent.match(/<b>Perfume-Uses=<\/b>\s*([^<]+)/i);
+    if (perfumeUsesMatch && !product.perfume_uses) {
+      product.perfume_uses = perfumeUsesMatch[1].trim();
+    }
+    const occursMatch = htmlContent.match(/<b>Occurs-in=&gt;<\/b>\s*([^<]+)/i) || htmlContent.match(/<b>Occurs-in=<\/b>\s*([^<]+)/i);
+    if (occursMatch && !product.occurs_in) {
+      product.occurs_in = occursMatch[1].trim();
+    }
+    const blendsMatch = htmlContent.match(/<Blends-well-with=>\s*([^<]+)/i) || htmlContent.match(/<Blends-well-with=&gt;\s*([^<]+)/i);
+    if (blendsMatch && !product.blends_well_with) {
+      product.blends_well_with = blendsMatch[1].trim();
+    }
 
     // Relative Odor Impact and Odor Life
     odourBox.find('a').each((_, el) => {
@@ -215,18 +244,39 @@ async function scrapeProduct(proId) {
 
   // ABC Donut - extract from script or image references
   const htmlFull = $.html();
-  const donutMatch = htmlFull.match(/donut\s*=\s*'([^']+)'/);
-  if (donutMatch) {
-    let donutPath = donutMatch[1];
-    // Make relative URL absolute
-    if (donutPath.startsWith('images/')) {
-      donutPath = `${BASE_URL}/${donutPath}`;
+
+  // Extract Morris.Donut data
+  const morrisMatch = htmlFull.match(/Morris\.Donut\(\{[\s\S]*?data:\s*\[([\s\S]*?)\]/);
+  if (morrisMatch) {
+    const dataBlock = morrisMatch[1];
+    const entries = [];
+    const entryRegex = /\{label:\s*"([^"]+)",\s*value:\s*([\d.]+)\s*\}/g;
+    let m;
+    while ((m = entryRegex.exec(dataBlock)) !== null) {
+      entries.push({ label: m[1], value: parseFloat(m[2]) });
     }
-    product.abc_donut = donutPath;
-    // Extract category name from filename
-    const catMatch = donutPath.match(/images\/syn\/([^\/]+)\.jpg/);
-    if (catMatch) {
-      product.abc_category = catMatch[1];
+    if (entries.length > 0) {
+      product.abc_donut_data = entries;
+      // Use the highest-value category as the primary abc_category
+      entries.sort((a, b) => b.value - a.value);
+      product.abc_category = entries[0].label.toLowerCase().replace(/\s+/g, '-');
+      product.abc_donut = `${BASE_URL}/images/syn/${product.abc_category}.jpg`;
+    }
+  }
+
+  // Fallback: extract from image references
+  if (!product.abc_donut) {
+    const donutMatch = htmlFull.match(/donut\s*=\s*'([^']+)'/);
+    if (donutMatch) {
+      let donutPath = donutMatch[1];
+      if (donutPath.startsWith('images/')) {
+        donutPath = `${BASE_URL}/${donutPath}`;
+      }
+      product.abc_donut = donutPath;
+      const catMatch = donutPath.match(/images\/syn\/([^\/]+)\.jpg/);
+      if (catMatch) {
+        product.abc_category = catMatch[1];
+      }
     }
   }
 

@@ -1,0 +1,15 @@
+{
+  "name": "perfume-formulator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Perfume Formulator - Crawler + Web App",
+  "scripts": {
+    "start": "node webapp/server.js",
+    "crawler": "node crawler/crawler.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "express": "^5.2.1",
+    "express-rate-limit": "^7.0.0"
+  }
+}
